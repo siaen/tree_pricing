@@ -31,47 +31,54 @@ def binomial_tree(underlying, strike, option, dev, rate, maturity, dt, barrier=0
                 value_of_underlying[j,i] = value_of_underlying[j-1,i-1] * d
                 avg_of_underlying[j,i]= (avg_of_underlying[j-1,i-1] * i + value_of_underlying[j,i])/(i+1)
                         
-            if option == "call":
+            if i == (n+1)-1 and option == "call":
                 if model == 1:
-                    value_of_option[j,i] = max(value_of_underlying[j,i] - strike, 0)
+                    value_of_option[j,] = max(value_of_underlying[j,i] - strike, 0)
                 elif model in [2, 4]:
-                    value_of_option[j,i] = max(value_of_underlying[j,i] - strike, 0) * indicator_barrier
+                    value_of_option[j,i] = max(value_of_underlying[j,i] - strike, 0)
                 elif model == 3:
-                    value_of_option[j,i] = max(avg_of_underlying[j,i] - strike, 0) * indicator_barrier
+                    value_of_option[j,i] = max(avg_of_underlying[j,i] - strike, 0)
                 else:
                     return "Error, not valid model type!"               
-            elif option == "put":
+            elif i == (n+1)-1 and option == "put":
                 if model == 1:
                     value_of_option[j,i] = max(strike - value_of_underlying[j,i], 0)
                 elif model in [2, 4]:
-                    value_of_option[j,i] = max(strike - value_of_underlying[j,i], 0) * indicator_barrier
+                    value_of_option[j,i] = max(strike - value_of_underlying[j,i], 0)
                 elif model == 3:
-                    value_of_option[j,i] = max(strike - avg_of_underlying[j,i], 0) * indicator_barrier
+                    value_of_option[j,i] = max(strike - avg_of_underlying[j,i], 0)
                 else:
                     return "Error, not valid model type!"
-            else:
+            elif i == (n+1)-1:
                 return "Error, not valid option type!"
+            else:
+                pass
     
     for i in range(1, (n+1)):
         for j in range(1, 2*(n+1)):
-            price[j,n-i]= np.exp(-1*rate*dt)*(p*value_of_option[j-1,n+1-i]+(1-p)*value_of_option[j+1,n+1-i])
+            value_of_option[j,n-i]= np.exp(-1*rate*dt)*(p*value_of_option[j-1,n+1-i]+(1-p)*value_of_option[j+1,n+1-i])
             if model == 4:
-                exercise = (strike - value_of_underlying[j,n-i])*np.exp(-1*rate*dt)
-                if (price[j,n-i] < exercise):
-                    price[j,n-i] = exercise
+                if option == "call":
+                    exercise = (value_of_underlying[j,n-i] - strike)*np.exp(-1*rate*dt)
+                    if (value_of_option[j,n-i] > exercise):
+                        value_of_option[j,n-i] = exercise               
+                elif option == "put":
+                    exercise = (strike - value_of_underlying[j,n-i])*np.exp(-1*rate*dt)
+                    if (value_of_option[j,n-i] < exercise):
+                        value_of_option[j,n-i] = exercise
             
-    price_of_option = price[int((2*(n+1)) / 2), 0]
+    price_of_option = value_of_option[int((2*(n+1)) / 2), 0]
     
     return price_of_option
 
 def main():
-    underlying = 120
+    underlying = 150
     dev = 0.1
     rate = 0.05
     maturity = 4
     dt = 1
-    strike = 90
-    barrier = 100
+    strike = 100
+    barrier = 160
     option = "call"
 
     print "Europen Vanilla " + option + " price: " + str(binomial_tree(underlying, strike, option, dev, rate,
