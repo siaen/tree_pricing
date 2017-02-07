@@ -21,25 +21,38 @@ def binomial_tree(underlying, strike, option, dev, rate, maturity, dt, barrier=0
 
     value_of_underlying[int((2*(n+1))/2),0] = underlying
     avg_of_underlying = value_of_underlying.copy()
+    avg_of_underlying_basic = avg_of_underlying.copy()
     
     for i in range(1, (n+1)):
         for j in range(1, 2*(n+1)):
             value_of_underlying[j,i] = value_of_underlying[j+1,i-1] * u
-            avg_of_underlying[j,i] = (avg_of_underlying[j+1,i-1]*i + value_of_underlying[j,i]) / (i+1)
             
             if value_of_underlying[j-1,i-1] * d != 0:
                 value_of_underlying[j,i] = value_of_underlying[j-1,i-1] * d
-                avg_of_underlying[j,i]= (avg_of_underlying[j-1,i-1] * i + value_of_underlying[j,i])/(i+1)
-                        
+    
+    value_of_underlying_basic = value_of_underlying.copy()
+    
+    if barrier != 0:
+        value_of_underlying = value_of_underlying * (value_of_underlying < barrier)
+        
+    for i in range(1, (n+1)):
+        for j in range(1, 2*(n+1)):
+            avg_of_underlying[j,i] = (avg_of_underlying[j+1,i-1]*i + value_of_underlying[j,i]) / (i+1) 
+            avg_of_underlying_basic[j,i] = (avg_of_underlying_basic[j+1,i-1]*i + value_of_underlying[j,i]) / (i+1) 
+            
+            if value_of_underlying[j-1,i-1] * d != 0:
+                avg_of_underlying[j,i]= (avg_of_underlying[j-1,i-1] * i + value_of_underlying[j,i])/(i+1)   
+                avg_of_underlying_basic[j,i]= (avg_of_underlying_basic[j-1,i-1] * i + value_of_underlying[j,i])/(i+1)    
+                
+            avg_of_underlying[j,i] = avg_of_underlying[j,i] * (value_of_underlying[j,i] !=0) 
+            
             if i == (n+1)-1 and option == "call":
                 if model == 1:
                     value_of_option[j,] = max(value_of_underlying[j,i] - strike, 0)
                 elif model in [2, 4]:
                     value_of_option[j,i] = max(value_of_underlying[j,i] - strike, 0)
                 elif model == 3:
-                    value_of_option[j,i] = max(avg_of_underlying[j,i] - strike, 0)
-                else:
-                    return "Error, not valid model type!"               
+                    value_of_option[j,i] = max(avg_of_underlying[j,i] - strike, 0)              
             elif i == (n+1)-1 and option == "put":
                 if model == 1:
                     value_of_option[j,i] = max(strike - value_of_underlying[j,i], 0)
@@ -47,26 +60,21 @@ def binomial_tree(underlying, strike, option, dev, rate, maturity, dt, barrier=0
                     value_of_option[j,i] = max(strike - value_of_underlying[j,i], 0)
                 elif model == 3:
                     value_of_option[j,i] = max(strike - avg_of_underlying[j,i], 0)
-                else:
-                    return "Error, not valid model type!"
-            elif i == (n+1)-1:
-                return "Error, not valid option type!"
-            else:
-                pass
-    
+            
     for i in range(1, (n+1)):
         for j in range(1, 2*(n+1)):
-            value_of_option[j,n-i]= np.exp(-1*rate*dt)*(p*value_of_option[j-1,n+1-i]+(1-p)*value_of_option[j+1,n+1-i])
+            value_of_option[j,n-i] = np.exp(-1*rate*dt)*(p*value_of_option[j-1,n+1-i]+(1-p)*value_of_option[j+1,n+1-i])
             if model == 4:
                 if option == "call":
                     exercise = (value_of_underlying[j,n-i] - strike)*np.exp(-1*rate*dt)
                     if (value_of_option[j,n-i] > exercise):
-                        value_of_option[j,n-i] = exercise               
+                        value_of_option[j,n-i] = exercise              
                 elif option == "put":
                     exercise = (strike - value_of_underlying[j,n-i])*np.exp(-1*rate*dt)
                     if (value_of_option[j,n-i] < exercise):
                         value_of_option[j,n-i] = exercise
-            
+            value_of_option[j,n-i] = value_of_option[j,n-i] * (value_of_underlying[j,n-i] !=0)
+   
     price_of_option = value_of_option[int((2*(n+1)) / 2), 0]
     
     return price_of_option
