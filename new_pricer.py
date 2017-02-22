@@ -112,8 +112,12 @@ def binomial_tree(underlying, strike, option, dev, rate, maturity, dt, barrier=0
                 recalc_points.append([i, [top_idx, bottom_idx]])
     
         for recalc in recalc_points:
-            D = value_of_underlying[recalc[1][1], recalc[0]]
-            U = value_of_underlying[recalc[1][0], recalc[0]]
+            if model != 3:
+                D = value_of_underlying[recalc[1][1], recalc[0]]
+                U = value_of_underlying[recalc[1][0], recalc[0]]
+            else:
+                D = avg_of_underlying[recalc[1][1], recalc[0]]
+                U = avg_of_underlying[recalc[1][0], recalc[0]]
             value_op = value_of_option[recalc[1][1], recalc[0]]
             value_of_option[recalc[1][1], recalc[0]] = (barrier - D) / (U - D) * value_op
         
