@@ -32,8 +32,6 @@ def binomial_tree(underlying, strike, option, dev, rate, maturity, dt, barrier=0
                 i_this = max_recalc_i - 1 - i
                 if value_of_underlying[j,i_this] != 0:
                     value_of_option[j,i_this]= np.exp(-1*rate*dt)*(p*value_of_option[j-1,i_this+1]+(1-p)*value_of_option[j+1,i_this+1])
-                if barrier_model and value_of_underlying[j,i_this] > barrier:
-                    value_of_option[j,i_this] = 0
                 if model == 4:
                     if option == "call":
                         exercise = (value_of_underlying[j,i_this] - strike)*np.exp(-1*rate*dt)
@@ -43,6 +41,8 @@ def binomial_tree(underlying, strike, option, dev, rate, maturity, dt, barrier=0
                         exercise = (strike - value_of_underlying[j,i_this])*np.exp(-1*rate*dt)
                         if (value_of_option[j,i_this] < exercise):
                             value_of_option[j,i_this] = exercise
+                if barrier_model and value_of_underlying[j,i_this] > barrier:
+                    value_of_option[j,i_this] = 0
 
     
     value_of_underlying = np.zeros((j_max+1)*i_max).reshape((j_max+1), i_max)
